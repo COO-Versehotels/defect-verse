@@ -745,7 +745,7 @@
 
       <div class="login-footer">
         Restricted access for COO, CEO & Corporate Team<br>
-        v0.5.3 · Cache Bust
+        v0.5.4 · Fixed supabase var collision
       </div>
     </div>
   </div>
@@ -1123,7 +1123,7 @@
   // ============================================================
   // APP VERSION
   // ============================================================
-  const APP_VERSION = '2026.07.03-0.5.3';
+  const APP_VERSION = '2026.07.03-0.5.4';
   const APP_NAME = 'Verse Defect Command Center';
 
   // ============================================================
@@ -1141,11 +1141,11 @@
   // ============================================================
   // SUPABASE CONFIG — PLACEHOLDER, REPLACE WHEN CREDENTIALS READY
   // ============================================================
-  const SUPABASE_URL = 'https://hgbqecsmhrzlavsjwlwq.supabase.co';
+  const SUPABASE_URL = 'https://hgbqecsmhrzlavsjwlwq.sbClient.co';
   const SUPABASE_KEY = 'sb_publishable_KeAmOu9ex8r1PDRI1MRMsQ_40uiEkbM';
-  let supabase = null;
+  let sbClient = null;
   if (SUPABASE_URL && SUPABASE_KEY && window.supabase) {
-    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     console.log('[Supabase] Connected:', SUPABASE_URL);
   }
 
@@ -1253,9 +1253,9 @@
       }
 
       // SECONDARY: Supabase dashboard_users — optional, only if whitelist missed
-      if (!user && supabase) {
+      if (!user && sbClient) {
         try {
-          const queryPromise = supabase
+          const queryPromise = sbClient
             .from('dashboard_users')
             .select('id, email, password, name, role, active')
             .eq('email', email)
@@ -1271,7 +1271,7 @@
             user = { email: data.email, name: data.name, role: data.role };
             console.log('[Login] Success via Supabase for:', email);
             try {
-              supabase.from('dashboard_users').update({ last_login_at: new Date().toISOString() }).eq('id', data.id).then();
+              sbClient.from('dashboard_users').update({ last_login_at: new Date().toISOString() }).eq('id', data.id).then();
             } catch(_){}
           } else {
             console.log('[Login] Not found in Supabase either');
@@ -1291,7 +1291,7 @@
     if (loginBtn) { loginBtn.disabled = false; loginBtn.textContent = 'Sign In'; }
 
     if (!user) {
-      const attemptedSupabase = supabase !== null;
+      const attemptedSupabase = sbClient !== null;
       if (errorEl) errorEl.innerHTML = attemptedSupabase
         ? 'Invalid email or password.<br><span style="font-size:10px;color:rgba(255,255,255,0.5);">Checked whitelist + Supabase.</span>'
         : 'Invalid email or password.<br><span style="font-size:10px;color:rgba(255,255,255,0.5);">Checked whitelist (Supabase offline).</span>';
@@ -1372,18 +1372,18 @@
   ];
 
   async function fetchAllDefects() {
-    if (!supabase) return [];
+    if (!sbClient) return [];
     try {
-      const { data, error } = await supabase.from('defects').select('*').order('created_at', { ascending: false });
+      const { data, error } = await sbClient.from('defects').select('*').order('created_at', { ascending: false });
       if (error) { console.error('[Fetch defects]', error); return []; }
       return data || [];
     } catch(e) { console.error('[Fetch defects] catch:', e); return []; }
   }
 
   async function fetchActivityLogs(limit = 20) {
-    if (!supabase) return [];
+    if (!sbClient) return [];
     try {
-      const { data, error } = await supabase.from('activity_logs').select('*').order('created_at', { ascending: false }).limit(limit);
+      const { data, error } = await sbClient.from('activity_logs').select('*').order('created_at', { ascending: false }).limit(limit);
       if (error) { console.error('[Fetch activity_logs]', error); return []; }
       return data || [];
     } catch(e) { console.error('[Fetch activity_logs] catch:', e); return []; }
@@ -1895,7 +1895,7 @@
       alert('Only COO/CEO can manage users');
       return;
     }
-    if (!supabase) {
+    if (!sbClient) {
       alert('Supabase not connected');
       return;
     }
@@ -1913,7 +1913,7 @@
     const listEl = document.getElementById('user-list');
     listEl.innerHTML = '<div class="loading">Loading user list...</div>';
     try {
-      const { data, error } = await supabase
+      const { data, error } = await sbClient
         .from('dashboard_users')
         .select('id, email, name, role, active, last_login_at, created_at')
         .order('role', { ascending: true })
@@ -1963,7 +1963,7 @@
   }
 
   async function editUser(id) {
-    const { data, error } = await supabase.from('dashboard_users').select('*').eq('id', id).single();
+    const { data, error } = await sbClient.from('dashboard_users').select('*').eq('id', id).single();
     if (error || !data) { alert('Failed to fetch user data'); return; }
     document.getElementById('user-form').style.display = 'block';
     document.getElementById('user-form-title').textContent = 'Edit User';
@@ -2021,11 +2021,11 @@
         // Update existing
         const update = { email, name, role, active, updated_at: new Date().toISOString() };
         if (password) update.password = password;
-        const { error } = await supabase.from('dashboard_users').update(update).eq('id', parseInt(id));
+        const { error } = await sbClient.from('dashboard_users').update(update).eq('id', parseInt(id));
         if (error) throw error;
       } else {
         // Insert new
-        const { error } = await supabase.from('dashboard_users').insert({ email, password, name, role, active });
+        const { error } = await sbClient.from('dashboard_users').insert({ email, password, name, role, active });
         if (error) throw error;
       }
       document.getElementById('user-form').style.display = 'none';
@@ -2042,7 +2042,7 @@
   async function deleteUser(id, name) {
     if (!confirm(`Are you sure to delete user "${name}"? This action cannot be undone.`)) return;
     try {
-      const { error } = await supabase.from('dashboard_users').delete().eq('id', parseInt(id));
+      const { error } = await sbClient.from('dashboard_users').delete().eq('id', parseInt(id));
       if (error) throw error;
       await loadUserList();
     } catch(e) {
@@ -2091,7 +2091,7 @@
     };
     document.addEventListener('DOMContentLoaded', () => {
       applyLogos();
-      console.log('[Boot] APP_VERSION =', APP_VERSION, '| Supabase client:', supabase ? 'initialized' : 'NOT initialized');
+      console.log('[Boot] APP_VERSION =', APP_VERSION, '| Supabase client:', sbClient ? 'initialized' : 'NOT initialized');
       // Safety net: attach click listener directly, in case inline onclick ever fails
       const btn = document.getElementById('login-btn');
       if (btn) btn.addEventListener('click', doLogin);
