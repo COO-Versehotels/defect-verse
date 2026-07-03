@@ -745,7 +745,7 @@
 
       <div class="login-footer">
         Restricted access for COO, CEO & Corporate Team<br>
-        v0.4 · Manage Users Live
+        v0.5.2 · Login Hardened
       </div>
     </div>
   </div>
@@ -1123,7 +1123,7 @@
   // ============================================================
   // APP VERSION
   // ============================================================
-  const APP_VERSION = '2026.07.02-0.4';
+  const APP_VERSION = '2026.07.03-0.5.2';
   const APP_NAME = 'Verse Defect Command Center';
 
   // ============================================================
@@ -1220,71 +1220,81 @@
   }
 
   async function doLogin() {
-    const email = document.getElementById('login-email').value.trim().toLowerCase();
-    const password = document.getElementById('login-password').value.trim();
-    const errorEl = document.getElementById('login-error');
-    const loginBtn = document.getElementById('login-btn');
+    console.log('[Login] doLogin() triggered');
+    let email = '', password = '', errorEl = null, loginBtn = null;
 
-    if (!email || !password) {
-      errorEl.textContent = 'Email and password required';
+    try {
+      email = (document.getElementById('login-email').value || '').trim().toLowerCase();
+      password = (document.getElementById('login-password').value || '').trim();
+      errorEl = document.getElementById('login-error');
+      loginBtn = document.getElementById('login-btn');
+    } catch (eInit) {
+      console.error('[Login] FATAL: could not read login form elements:', eInit);
+      alert('Login form error: ' + eInit.message + ' (check console)');
       return;
     }
 
-    loginBtn.disabled = true;
-    loginBtn.textContent = 'Checking...';
-    errorEl.textContent = '';
+    if (!email || !password) {
+      if (errorEl) errorEl.textContent = 'Email and password required';
+      return;
+    }
+
+    if (loginBtn) { loginBtn.disabled = true; loginBtn.textContent = 'Checking...'; }
+    if (errorEl) errorEl.textContent = '';
 
     let user = null;
 
-    // Try Supabase dashboard_users first (with 5s timeout)
-    if (supabase) {
-      try {
-        const queryPromise = supabase
-          .from('dashboard_users')
-          .select('id, email, password, name, role, active')
-          .eq('email', email)
-          .maybeSingle();
-        const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Supabase timeout')), 5000)
-        );
-        const { data, error } = await Promise.race([queryPromise, timeoutPromise]);
-
-        if (error) {
-          console.warn('[Login] Supabase error, will try fallback:', error.message);
-        } else if (data && data.active !== false && data.password === password) {
-          user = { email: data.email, name: data.name, role: data.role };
-          console.log('[Login] Success via Supabase for:', email);
-          // Update last_login_at (fire-and-forget)
-          try {
-            supabase.from('dashboard_users').update({ last_login_at: new Date().toISOString() }).eq('id', data.id).then();
-          } catch(_){}
-        } else {
-          console.log('[Login] Not found in Supabase (or wrong password), trying fallback list');
-        }
-      } catch(e) {
-        console.warn('[Login] Supabase query error/timeout, using fallback:', e.message);
-      }
-    } else {
-      console.log('[Login] Supabase not initialized, using fallback whitelist');
-    }
-
-    // Fallback to hardcoded whitelist kalau Supabase gagal
-    if (!user) {
+    try {
+      // PRIMARY: hardcoded whitelist — instant, no network dependency
       const wUser = WHITELIST_USERS.find(u => u.email.toLowerCase() === email && u.password === password);
       if (wUser) {
         user = { email: wUser.email, name: wUser.name, role: wUser.role };
+        console.log('[Login] Success via WHITELIST for:', email);
       }
+
+      // SECONDARY: Supabase dashboard_users — optional, only if whitelist missed
+      if (!user && supabase) {
+        try {
+          const queryPromise = supabase
+            .from('dashboard_users')
+            .select('id, email, password, name, role, active')
+            .eq('email', email)
+            .maybeSingle();
+          const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Supabase timeout')), 5000)
+          );
+          const { data, error } = await Promise.race([queryPromise, timeoutPromise]);
+
+          if (error) {
+            console.warn('[Login] Supabase error (ignored, whitelist is primary):', error.message);
+          } else if (data && data.active !== false && data.password === password) {
+            user = { email: data.email, name: data.name, role: data.role };
+            console.log('[Login] Success via Supabase for:', email);
+            try {
+              supabase.from('dashboard_users').update({ last_login_at: new Date().toISOString() }).eq('id', data.id).then();
+            } catch(_){}
+          } else {
+            console.log('[Login] Not found in Supabase either');
+          }
+        } catch(e) {
+          console.warn('[Login] Supabase query error/timeout (ignored, whitelist is primary):', e.message);
+        }
+      }
+    } catch (eOuter) {
+      // Guaranteed catch-all so the button ALWAYS resets, no matter what breaks
+      console.error('[Login] UNEXPECTED ERROR during login:', eOuter);
+      if (errorEl) errorEl.innerHTML = 'Unexpected error: ' + eOuter.message + '<br><span style="font-size:10px;color:rgba(255,255,255,0.5);">Check console (F12) for details.</span>';
+      if (loginBtn) { loginBtn.disabled = false; loginBtn.textContent = 'Sign In'; }
+      return;
     }
 
-    loginBtn.disabled = false;
-    loginBtn.textContent = 'Sign In';
+    if (loginBtn) { loginBtn.disabled = false; loginBtn.textContent = 'Sign In'; }
 
     if (!user) {
-      // More detailed error to help debug
       const attemptedSupabase = supabase !== null;
-      errorEl.innerHTML = attemptedSupabase
-        ? 'Invalid email or password.<br><span style="font-size:10px;color:rgba(255,255,255,0.5);">Checked Supabase + fallback list.</span>'
-        : 'Invalid email or password.<br><span style="font-size:10px;color:rgba(255,255,255,0.5);">Supabase offline, using fallback list.</span>';
+      if (errorEl) errorEl.innerHTML = attemptedSupabase
+        ? 'Invalid email or password.<br><span style="font-size:10px;color:rgba(255,255,255,0.5);">Checked whitelist + Supabase.</span>'
+        : 'Invalid email or password.<br><span style="font-size:10px;color:rgba(255,255,255,0.5);">Checked whitelist (Supabase offline).</span>';
       console.log('[Login] Failed for email:', email, '| Supabase attempted:', attemptedSupabase);
       return;
     }
@@ -2076,7 +2086,17 @@
 
   // Apply logos AS EARLY AS POSSIBLE — before window.load
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => applyLogos());
+    window.onerror = function(msg, url, line, col, err) {
+      console.error('[GLOBAL ERROR]', msg, 'at', url + ':' + line + ':' + col, err);
+    };
+    document.addEventListener('DOMContentLoaded', () => {
+      applyLogos();
+      console.log('[Boot] APP_VERSION =', APP_VERSION, '| Supabase client:', supabase ? 'initialized' : 'NOT initialized');
+      // Safety net: attach click listener directly, in case inline onclick ever fails
+      const btn = document.getElementById('login-btn');
+      if (btn) btn.addEventListener('click', doLogin);
+      else console.error('[Boot] #login-btn not found in DOM!');
+    });
   } else {
     applyLogos();
   }
