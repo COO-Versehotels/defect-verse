@@ -919,7 +919,7 @@
 
       <div class="login-footer">
         Restricted access for COO, CEO & Corporate Team<br>
-        v0.8.5 · Exact Status Match With Units
+        v0.9.0 · Comparison Mode Implemented
       </div>
     </div>
   </div>
@@ -1340,13 +1340,35 @@
     </div>
   </div>
 
+  <div id="compare-modal" class="modal" style="display:none;">
+    <div class="modal-backdrop" onclick="closeCompare()"></div>
+    <div class="modal-content" style="max-height:88vh;">
+      <div class="modal-header">
+        <div>
+          <div style="font-size:14px;font-weight:600;color:white;">Comparison Mode</div>
+          <div style="font-size:10px;color:rgba(255,255,255,0.5);">Compare 2 hotels side-by-side</div>
+        </div>
+        <button class="modal-close" onclick="closeCompare()" aria-label="Tutup">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div style="display:flex;gap:8px;margin-bottom:16px;">
+          <select id="compare-hotel-a" onchange="renderComparison()" style="flex:1;background-color:#16243a;color:white;border:0.5px solid rgba(255,255,255,0.15);border-radius:8px;padding:10px 8px;font-size:12px;font-family:inherit;"></select>
+          <select id="compare-hotel-b" onchange="renderComparison()" style="flex:1;background-color:#16243a;color:white;border:0.5px solid rgba(255,255,255,0.15);border-radius:8px;padding:10px 8px;font-size:12px;font-family:inherit;"></select>
+        </div>
+        <div id="compare-results"></div>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <script>
   // ============================================================
   // APP VERSION
   // ============================================================
-  const APP_VERSION = '2026.07.03-0.8.5';
+  const APP_VERSION = '2026.07.03-0.9.0';
   const APP_NAME = 'Verse Defect Command Center';
 
   // ============================================================
@@ -1573,7 +1595,7 @@
 
   function goTab(tab) {
     if (tab === 'compare') {
-      alert('Comparison mode — TODO implement');
+      openCompare();
       return;
     }
     showScreen(tab);
@@ -1585,6 +1607,96 @@
     if (tab === 'analytics') loadAnalytics();
     if (tab === 'aging') loadAging();
     if (tab === 'log') loadTimeline();
+  }
+
+  function openCompare() {
+    const selA = document.getElementById('compare-hotel-a');
+    const selB = document.getElementById('compare-hotel-b');
+    if (!selA.options.length) {
+      const optionsHTML = HOTEL_DEFS.map(h => `<option value="${h.key}" style="background:#16243a;color:white;">${h.displayName}</option>`).join('');
+      selA.innerHTML = optionsHTML;
+      selB.innerHTML = optionsHTML;
+      selB.selectedIndex = Math.min(1, HOTEL_DEFS.length - 1);
+    }
+    document.getElementById('compare-modal').style.display = 'flex';
+    renderComparison();
+  }
+
+  function closeCompare() {
+    document.getElementById('compare-modal').style.display = 'none';
+  }
+
+  function computeHotelStats(h) {
+    const hotelDefects = ALL_DEFECTS_CACHE.filter(d => (d.hotel || '').trim() === h.dbName);
+    const open = hotelDefects.filter(d => statusOf(d) === 'open').length;
+    const progress = hotelDefects.filter(d => statusOf(d) === 'progress').length;
+    const pending = hotelDefects.filter(d => statusOf(d) === 'pending').length;
+    const done = hotelDefects.filter(d => statusOf(d) === 'done').length;
+    const total = open + progress + pending + done;
+    const active = open + progress + pending;
+    const now = new Date();
+    let longest = 0;
+    hotelDefects.forEach(d => {
+      if (statusOf(d) !== 'done' && statusOf(d) !== null) {
+        const created = new Date(d.created_at);
+        const days = Math.floor((now - created) / (1000 * 60 * 60 * 24));
+        if (days > longest) longest = days;
+      }
+    });
+    return { open, progress, pending, done, total, active, longest };
+  }
+
+  function renderComparison() {
+    const keyA = document.getElementById('compare-hotel-a').value;
+    const keyB = document.getElementById('compare-hotel-b').value;
+    const hA = HOTEL_DEFS.find(h => h.key === keyA);
+    const hB = HOTEL_DEFS.find(h => h.key === keyB);
+    const resultsEl = document.getElementById('compare-results');
+    if (!hA || !hB) { resultsEl.innerHTML = ''; return; }
+
+    if (keyA === keyB) {
+      resultsEl.innerHTML = '<div class="empty" style="padding:20px 12px;text-align:center;color:rgba(255,255,255,0.4);font-size:13px;">Pilih 2 hotel yang berbeda untuk dibandingkan.</div>';
+      return;
+    }
+
+    const sA = computeHotelStats(hA);
+    const sB = computeHotelStats(hB);
+
+    const row = (label, valA, valB, lowerIsBetter) => {
+      let colorA = 'white', colorB = 'white';
+      if (typeof valA === 'number' && typeof valB === 'number' && valA !== valB) {
+        const aBetter = lowerIsBetter ? valA < valB : valA > valB;
+        colorA = aBetter ? '#34d399' : '#f87171';
+        colorB = aBetter ? '#f87171' : '#34d399';
+      }
+      return `
+        <div style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;padding:10px 0;border-bottom:0.5px solid rgba(255,255,255,0.08);">
+          <div style="text-align:right;font-size:16px;font-weight:700;color:${colorA};">${valA}</div>
+          <div style="font-size:10px;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.3px;white-space:nowrap;">${label}</div>
+          <div style="text-align:left;font-size:16px;font-weight:700;color:${colorB};">${valB}</div>
+        </div>
+      `;
+    };
+
+    resultsEl.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <div style="flex:1;text-align:right;padding-right:8px;">
+          <div style="font-size:12px;font-weight:600;color:#60a5fa;">${hA.displayName}</div>
+        </div>
+        <div style="width:40px;"></div>
+        <div style="flex:1;text-align:left;padding-left:8px;">
+          <div style="font-size:12px;font-weight:600;color:#60a5fa;">${hB.displayName}</div>
+        </div>
+      </div>
+      ${row('Total Defect', sA.total, sB.total, true)}
+      ${row('Active', sA.active, sB.active, true)}
+      ${row('Open', sA.open, sB.open, true)}
+      ${row('Progress', sA.progress, sB.progress, false)}
+      ${row('Pending', sA.pending, sB.pending, true)}
+      ${row('Done', sA.done, sB.done, false)}
+      ${row('Longest Aging (days)', sA.longest, sB.longest, true)}
+      <div style="font-size:10px;color:rgba(255,255,255,0.35);text-align:center;margin-top:14px;">🟢 Hijau = lebih baik &nbsp;·&nbsp; 🔴 Merah = perlu perhatian</div>
+    `;
   }
 
   // ============================================================
