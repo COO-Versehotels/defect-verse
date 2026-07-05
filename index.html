@@ -834,15 +834,15 @@
         width: 34px;
         height: 34px;
         border-radius: 9px;
-        background: linear-gradient(135deg, var(--accent), var(--accent-hover));
-        color: white;
-        font-weight: 800;
-        font-size: 16px;
+        background: white;
         display: flex;
         align-items: center;
         justify-content: center;
         flex-shrink: 0;
+        overflow: hidden;
+        padding: 4px;
       }
+      .sidebar-brand-mark img { width: 100%; height: 100%; object-fit: contain; }
       .sidebar-brand-text {
         font-size: 13px;
         font-weight: 700;
@@ -919,7 +919,7 @@
 
       <div class="login-footer">
         Restricted access for COO, CEO & Corporate Team<br>
-        v0.7.3 · View Existing Password
+        v0.7.4 · Real Logo + Same-Tab Nav
       </div>
     </div>
   </div>
@@ -1213,7 +1213,7 @@
   <!-- ================================================= -->
   <div class="bottom-nav" id="bottom-nav" style="display:none;">
     <div class="sidebar-brand" style="display:none;">
-      <span class="sidebar-brand-mark">V</span>
+      <div class="sidebar-brand-mark"><img class="header-logo-img" alt="Verse Hotels" /></div>
       <span class="sidebar-brand-text">VERSE<br><small>DEFECT CENTER</small></span>
     </div>
     <button class="nav-btn active" data-tab="home" onclick="goTab('home')">
@@ -1329,7 +1329,7 @@
   // ============================================================
   // APP VERSION
   // ============================================================
-  const APP_VERSION = '2026.07.03-0.7.3';
+  const APP_VERSION = '2026.07.03-0.7.4';
   const APP_NAME = 'Verse Defect Command Center';
 
   // ============================================================
@@ -1691,7 +1691,7 @@
       const pctDone = total > 0 ? (done / total * 100).toFixed(0) : 0;
 
       cardsHTML += `
-        <a href="${h.url}?sso_email=${encodeURIComponent(currentUser.email)}" target="_blank" class="hotel-card">
+        <a href="${h.url}?sso_email=${encodeURIComponent(currentUser.email)}" class="hotel-card">
           <div class="hotel-accent" style="background:${h.accent};"></div>
           <div class="hotel-head">
             <div class="hotel-info">
@@ -1765,7 +1765,7 @@
       const pctDone = (h.done / h.total * 100).toFixed(0);
       const dangerClass = active > 30 ? ' danger' : '';
       return `
-        <a href="${h.url}?sso_email=${encodeURIComponent(currentUser.email)}" target="_blank" class="hotel-card">
+        <a href="${h.url}?sso_email=${encodeURIComponent(currentUser.email)}" class="hotel-card">
           <div class="hotel-accent" style="background:${h.accent};"></div>
           <div class="hotel-head">
             <div class="hotel-info">
