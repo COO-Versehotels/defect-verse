@@ -919,7 +919,7 @@
 
       <div class="login-footer">
         Restricted access for COO, CEO & Corporate Team<br>
-        v0.8.1 · Fixed Manage Users Button
+        v0.8.4 · Admin Role Decoupled from Title
       </div>
     </div>
   </div>
@@ -1275,10 +1275,11 @@
             </button>
           </div>
           <input type="text" id="user-form-name" class="user-form-input" placeholder="Full name" autocomplete="off" />
-          <select id="user-form-role" class="user-form-input">
-            <option value="Corporate">Corporate (view only)</option>
-            <option value="COO">COO (full access + manage users)</option>
-            <option value="CEO">CEO (full access + manage users)</option>
+          <select id="user-form-role" class="user-form-input" style="background-color:#16243a;color:white;">
+            <option value="Corporate" style="background:#16243a;color:white;">Corporate (view only everywhere)</option>
+            <option value="Corporate-Editor" style="background:#16243a;color:white;">Corporate - Editor (can edit in units, view only in Command Center)</option>
+            <option value="CEO" style="background:#16243a;color:white;">CEO (can edit in units, view only in Command Center)</option>
+            <option value="Admin" style="background:#16243a;color:white;">Admin (full access + Manage Users)</option>
           </select>
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
             <input type="checkbox" id="user-form-active" checked style="cursor:pointer;" />
@@ -1345,7 +1346,7 @@
   // ============================================================
   // APP VERSION
   // ============================================================
-  const APP_VERSION = '2026.07.03-0.8.1';
+  const APP_VERSION = '2026.07.03-0.8.4';
   const APP_NAME = 'Verse Defect Command Center';
 
   // ============================================================
@@ -1375,7 +1376,7 @@
   // WHITELIST — TEMPORARY, replace with Supabase users table later
   // ============================================================
   const WHITELIST_USERS = [
-    { email: 'coo.versehotels@gmail.com', password: 'coo2026', name: 'Ian', role: 'COO' },
+    { email: 'coo.versehotels@gmail.com', password: 'coo2026', name: 'Ian', role: 'Admin' },
     { email: 'ceo.versehotels@gmail.com', password: 'ceo2026', name: 'CEO', role: 'CEO' },
     { email: 'hrmanager.versehotels@gmail.com', password: 'hr2026', name: 'HR Manager', role: 'Corporate' },
     { email: 'engineer.versehotels@gmail.com', password: 'eng2026', name: 'CE Corporate', role: 'Corporate' },
@@ -1522,6 +1523,11 @@
     }
 
     saveSession(user);
+    if (sbClient) {
+      try {
+        sbClient.from('dashboard_users').update({ last_login_at: new Date().toISOString() }).eq('email', user.email).then();
+      } catch(_){}
+    }
     enterApp();
   }
 
@@ -1552,7 +1558,7 @@
     document.getElementById('greeting-text').textContent = `${greeting}, ${currentUser.name}`;
     document.getElementById('role-text').textContent = currentUser.role.toUpperCase();
     document.getElementById('profile-user-info').textContent = `${currentUser.name} · ${currentUser.email}`;
-    if (currentUser.role === 'COO' || currentUser.role === 'CEO') {
+    if (currentUser.role === 'Admin') {
       document.getElementById('admin-user-card').style.display = 'block';
     }
   }
@@ -2322,7 +2328,7 @@
   }
 
   function openManageUser() {
-    if (!currentUser || (currentUser.role !== 'COO' && currentUser.role !== 'CEO')) {
+    if (!currentUser || currentUser.role !== 'Admin') {
       alert('Only COO/CEO can manage users');
       return;
     }
