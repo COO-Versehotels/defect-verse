@@ -919,7 +919,7 @@
 
       <div class="login-footer">
         Restricted access for COO, CEO & Corporate Team<br>
-        v0.8.4 · Admin Role Decoupled from Title
+        v0.8.5 · Exact Status Match With Units
       </div>
     </div>
   </div>
@@ -1346,7 +1346,7 @@
   // ============================================================
   // APP VERSION
   // ============================================================
-  const APP_VERSION = '2026.07.03-0.8.4';
+  const APP_VERSION = '2026.07.03-0.8.5';
   const APP_NAME = 'Verse Defect Command Center';
 
   // ============================================================
@@ -1619,12 +1619,17 @@
   }
 
   function statusOf(d) {
-    const s = (d.status || '').toLowerCase();
-    if (s === 'open') return 'open';
-    if (s === 'progress' || s === 'in progress' || s === 'in_progress') return 'progress';
-    if (s === 'pending') return 'pending';
-    if (s === 'done' || s === 'closed') return 'done';
-    return 'open'; // default
+    // Match the EXACT canonical values written by the unit tracker apps
+    // ('Open' / 'In Progress' / 'Pending' / 'Done', capitalized) so counts
+    // agree exactly with what's shown inside each hotel's own app. The unit
+    // apps themselves only recognize these exact strings and silently drop
+    // anything else from their counts — we mirror that precisely here so
+    // the two dashboards never disagree.
+    if (d.status === 'Open') return 'open';
+    if (d.status === 'In Progress') return 'progress';
+    if (d.status === 'Pending' || d.status === 'Pending Part/Vendor') return 'pending';
+    if (d.status === 'Done') return 'done';
+    return null; // unrecognized status — excluded from all counts, same as the unit apps
   }
 
   function daysSince(dateStr) {
@@ -1667,7 +1672,7 @@
 
     // Categorize by status
     const byStatus = { open: 0, progress: 0, pending: 0, done: 0 };
-    defects.forEach(d => byStatus[statusOf(d)]++);
+    defects.forEach(d => { const s = statusOf(d); if (s) byStatus[s]++; });
 
     // Done month ini
     const now = new Date();
@@ -1700,11 +1705,11 @@
     let cardsHTML = '';
     for (const h of HOTEL_DEFS) {
       const hotelDefects = defects.filter(d => (d.hotel || '').trim() === h.dbName);
-      const total = hotelDefects.length;
       const open = hotelDefects.filter(d => statusOf(d) === 'open').length;
       const progress = hotelDefects.filter(d => statusOf(d) === 'progress').length;
       const pending = hotelDefects.filter(d => statusOf(d) === 'pending').length;
       const done = hotelDefects.filter(d => statusOf(d) === 'done').length;
+      const total = open + progress + pending + done;
       const active = open + progress + pending;
       const dangerClass = active > 20 ? ' danger' : '';
       const pctOpen = total > 0 ? (open / total * 100).toFixed(0) : 0;
