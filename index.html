@@ -919,7 +919,7 @@
 
       <div class="login-footer">
         Restricted access for COO, CEO & Corporate Team<br>
-        v0.7.4 · Real Logo + Same-Tab Nav
+        v0.8.0 · Real Search + Voice ID/EN
       </div>
     </div>
   </div>
@@ -1057,6 +1057,7 @@
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
       <span class="voice-ripple"></span>
     </button>
+    <button onclick="toggleVoiceLang(event)" id="voice-lang-btn" aria-label="Switch voice language" style="position:fixed;right:24px;bottom:104px;z-index:31;background:rgba(15,41,66,0.95);border:0.5px solid rgba(255,255,255,0.15);color:white;font-size:10px;font-weight:700;padding:4px 8px;border-radius:8px;cursor:pointer;">ID</button>
     <div class="voice-hint" id="voice-hint">🎤 Listening... say a command</div>
   </div>
 
@@ -1323,13 +1324,28 @@
     </div>
   </div>
 
+  <div id="search-modal" class="modal" style="display:none;">
+    <div class="modal-backdrop" onclick="closeSearch()"></div>
+    <div class="modal-content" style="max-height:88vh;">
+      <div class="modal-header" style="gap:10px;">
+        <input type="text" id="search-input" oninput="onSearchInput()" onkeydown="if(event.key==='Enter'){clearTimeout(_searchDebounce);performSearch(this.value.trim());}" placeholder="Cari: leaking, kamar 906, AC rusak..." autocomplete="off" style="flex:1;background:rgba(255,255,255,0.06);border:0.5px solid rgba(255,255,255,0.15);border-radius:8px;padding:10px 12px;color:white;font-size:14px;outline:none;font-family:inherit;" />
+        <button class="modal-close" onclick="closeSearch()" aria-label="Tutup">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div id="search-results"></div>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <script>
   // ============================================================
   // APP VERSION
   // ============================================================
-  const APP_VERSION = '2026.07.03-0.7.4';
+  const APP_VERSION = '2026.07.03-0.8.0';
   const APP_NAME = 'Verse Defect Command Center';
 
   // ============================================================
@@ -1691,7 +1707,7 @@
       const pctDone = total > 0 ? (done / total * 100).toFixed(0) : 0;
 
       cardsHTML += `
-        <a href="${h.url}?sso_email=${encodeURIComponent(currentUser.email)}" class="hotel-card">
+        <a href="${h.url}?sso_email=${encodeURIComponent(currentUser.email)}&sso_role=${encodeURIComponent(currentUser.role)}&sso_name=${encodeURIComponent(currentUser.name)}" class="hotel-card">
           <div class="hotel-accent" style="background:${h.accent};"></div>
           <div class="hotel-head">
             <div class="hotel-info">
@@ -1765,7 +1781,7 @@
       const pctDone = (h.done / h.total * 100).toFixed(0);
       const dangerClass = active > 30 ? ' danger' : '';
       return `
-        <a href="${h.url}?sso_email=${encodeURIComponent(currentUser.email)}" class="hotel-card">
+        <a href="${h.url}?sso_email=${encodeURIComponent(currentUser.email)}&sso_role=${encodeURIComponent(currentUser.role)}&sso_name=${encodeURIComponent(currentUser.name)}" class="hotel-card">
           <div class="hotel-accent" style="background:${h.accent};"></div>
           <div class="hotel-head">
             <div class="hotel-info">
@@ -2002,12 +2018,13 @@
   // ============================================================
   let recognition = null;
   let listening = false;
+  let voiceLang = localStorage.getItem('voice_lang') || 'id-ID';
 
   function initVoice() {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) return null;
     const rec = new SR();
-    rec.lang = 'en-US';
+    rec.lang = voiceLang;
     rec.continuous = false;
     rec.interimResults = false;
     rec.onresult = (e) => {
@@ -2017,6 +2034,15 @@
     rec.onerror = () => stopVoice();
     rec.onend = () => stopVoice();
     return rec;
+  }
+
+  function toggleVoiceLang(e) {
+    if (e) e.stopPropagation();
+    voiceLang = voiceLang === 'id-ID' ? 'en-US' : 'id-ID';
+    localStorage.setItem('voice_lang', voiceLang);
+    document.getElementById('voice-lang-btn').textContent = voiceLang === 'id-ID' ? 'ID' : 'EN';
+    recognition = null; // force re-init with new language on next use
+    if (listening) stopVoice();
   }
 
   function toggleVoice() {
@@ -2034,7 +2060,9 @@
       recognition.start();
       listening = true;
       document.querySelector('.voice-fab').classList.add('active');
-      document.getElementById('voice-hint').classList.add('show');
+      const hint = document.getElementById('voice-hint');
+      hint.textContent = voiceLang === 'id-ID' ? '🎤 Mendengarkan... ucapkan sesuatu' : '🎤 Listening... say a command';
+      hint.classList.add('show');
     } catch(e) { stopVoice(); }
   }
 
@@ -2047,14 +2075,16 @@
   function handleVoiceCommand(text) {
     console.log('[Voice]', text);
     stopVoice();
-    if (text.includes('luxe')) { goTab('home'); alert('Filter: Verse Luxe'); }
-    else if (text.includes('lite')) { goTab('home'); alert('Filter: Verse Lite'); }
-    else if (text.includes('cirebon')) { goTab('home'); alert('Filter: Verse Cirebon'); }
-    else if (text.includes('oak')) { goTab('home'); alert('Filter: Oak Tree'); }
-    else if (text.includes('aging') || text.includes('kritis')) { goTab('aging'); }
-    else if (text.includes('log') || text.includes('aktivitas')) { goTab('log'); }
-    else if (text.includes('analytics') || text.includes('analitik')) { goTab('analytics'); }
-    else alert(`Command not recognized: "${text}"`);
+    text = text.trim();
+    // Navigation commands — Indonesian + English synonyms recognized either way
+    if (/\b(aging|kritis|lama|terlambat)\b/.test(text)) { goTab('aging'); return; }
+    if (/\b(log|aktivitas|riwayat|history)\b/.test(text)) { goTab('log'); return; }
+    if (/\b(analytics|analitik|statistik)\b/.test(text)) { goTab('analytics'); return; }
+    if (/\b(home|beranda|dashboard|utama)\b/.test(text)) { goTab('home'); return; }
+    if (/\b(profile|profil|akun)\b/.test(text)) { goTab('profile'); return; }
+    // Anything else — including hotel names, room numbers, damage keywords like
+    // "leaking" / "bocor" / "kamar 906" / "AC rusak" — treat as a live defect search
+    openSearch(text);
   }
 
   // ============================================================
@@ -2225,22 +2255,70 @@
     });
   }
 
-  function openSearch() { alert('Search defect — TODO implement'); }
-  function openNotifications() { alert('Notifications list — TODO implement'); }
-  // ============================================================
-  // MANAGE USER MODAL — CRUD dashboard_users table
-  // ============================================================
-  async function openManageUser() {
-    if (!currentUser || (currentUser.role !== 'COO' && currentUser.role !== 'CEO')) {
-      alert('Only COO/CEO can manage users');
+  let _searchDebounce = null;
+
+  function openSearch(prefillQuery) {
+    document.getElementById('search-modal').style.display = 'flex';
+    const input = document.getElementById('search-input');
+    input.value = prefillQuery || '';
+    setTimeout(() => input.focus(), 50);
+    if (prefillQuery) {
+      performSearch(prefillQuery);
+    } else {
+      document.getElementById('search-results').innerHTML = '<div class="empty" style="padding:24px 12px;text-align:center;color:rgba(255,255,255,0.4);font-size:13px;">Ketik minimal 2 huruf, atau pakai 🎙️ voice command<br>Contoh: "leaking", "kamar 906", "AC rusak", "luxe"</div>';
+    }
+  }
+
+  function closeSearch() {
+    document.getElementById('search-modal').style.display = 'none';
+  }
+
+  function onSearchInput() {
+    clearTimeout(_searchDebounce);
+    const q = document.getElementById('search-input').value.trim();
+    _searchDebounce = setTimeout(() => performSearch(q), 350);
+  }
+
+  async function performSearch(query) {
+    const resultsEl = document.getElementById('search-results');
+    if (!query || query.length < 2) {
+      resultsEl.innerHTML = '<div class="empty" style="padding:24px 12px;text-align:center;color:rgba(255,255,255,0.4);font-size:13px;">Ketik minimal 2 huruf.</div>';
       return;
     }
-    if (!sbClient) {
-      alert('Supabase not connected');
-      return;
+    resultsEl.innerHTML = '<div class="loading">Mencari...</div>';
+    if (!sbClient) { resultsEl.innerHTML = '<div class="empty" style="color:#ef4444;">Supabase not connected</div>'; return; }
+    try {
+      const like = `%${query}%`;
+      const { data, error } = await sbClient.from('defects')
+        .select('*')
+        .or(`description.ilike.${like},location.ilike.${like},hotel.ilike.${like},category.ilike.${like},status.ilike.${like}`)
+        .order('created_at', { ascending: false })
+        .limit(50);
+      if (error) { resultsEl.innerHTML = '<div class="empty" style="color:#ef4444;">Error: ' + escapeHtml(error.message) + '</div>'; return; }
+      if (!data || data.length === 0) {
+        resultsEl.innerHTML = '<div class="empty" style="padding:24px 12px;text-align:center;color:rgba(255,255,255,0.4);">Tidak ada hasil untuk "' + escapeHtml(query) + '"</div>';
+        return;
+      }
+      const statusColorMap = { open: '#f59e0b', progress: '#3b82f6', pending: '#a78bfa', done: '#10b981' };
+      resultsEl.innerHTML = '<div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:10px;">' + data.length + ' hasil ditemukan</div>' +
+        data.map(d => {
+          const hotelDef = HOTEL_DEFS.find(h => h.dbName === d.hotel) || {};
+          const sc = statusColorMap[statusOf(d)] || '#f59e0b';
+          const ssoUrl = hotelDef.url ? (hotelDef.url + '?sso_email=' + encodeURIComponent(currentUser.email) + '&sso_role=' + encodeURIComponent(currentUser.role) + '&sso_name=' + encodeURIComponent(currentUser.name)) : '#';
+          return `
+            <a href="${ssoUrl}" style="display:block;text-decoration:none;color:inherit;background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.1);border-radius:10px;padding:12px;margin-bottom:8px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:5px;">
+                <span style="font-size:11px;font-weight:600;color:#60a5fa;">${escapeHtml(hotelDef.displayName || d.hotel || '-')}</span>
+                <span style="font-size:9px;font-weight:700;padding:2px 8px;border-radius:6px;background:${sc}22;color:${sc};text-transform:uppercase;letter-spacing:0.3px;">${escapeHtml(d.status || '-')}</span>
+              </div>
+              <div style="font-size:13px;color:white;font-weight:500;margin-bottom:3px;">${escapeHtml(d.description || '-')}</div>
+              <div style="font-size:11px;color:rgba(255,255,255,0.5);">📍 ${escapeHtml(d.location || '-')}</div>
+            </a>
+          `;
+        }).join('');
+    } catch(e) {
+      resultsEl.innerHTML = '<div class="empty" style="color:#ef4444;">Error: ' + escapeHtml(e.message) + '</div>';
     }
-    document.getElementById('manage-user-modal').style.display = 'flex';
-    await loadUserList();
   }
 
   function closeManageUser() {
@@ -2448,6 +2526,8 @@
     document.addEventListener('DOMContentLoaded', () => {
       applyLogos();
       console.log('[Boot] APP_VERSION =', APP_VERSION, '| Supabase client:', sbClient ? 'initialized' : 'NOT initialized');
+      const langBtn = document.getElementById('voice-lang-btn');
+      if (langBtn) langBtn.textContent = voiceLang === 'id-ID' ? 'ID' : 'EN';
       // Safety net: attach click listener directly, in case inline onclick ever fails
       const btn = document.getElementById('login-btn');
       if (btn) btn.addEventListener('click', doLogin);
