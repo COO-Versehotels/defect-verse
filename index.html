@@ -912,8 +912,7 @@
       <div class="login-title">Defect Command Center</div>
       <div class="login-subtitle">VERSE HOTELS · CORPORATE</div>
 
-      <input type="email" class="login-input" id="login-email" placeholder="coo.versehotels@gmail.com" autocomplete="email" />
-      <input type="password" class="login-input" id="login-password" placeholder="Password" autocomplete="current-password" />
+      <input type="tel" class="login-input" id="login-pin" placeholder="PIN 6 Digit" autocomplete="off" maxlength="6" inputmode="numeric" pattern="[0-9]*" style="letter-spacing:6px;text-align:center;font-size:22px;font-weight:700" />
       <button class="login-btn" id="login-btn" onclick="doLogin()">Sign In</button>
       <div class="login-error" id="login-error"></div>
 
@@ -1202,6 +1201,16 @@
           </button>
         </div>
 
+        <div class="pref-card" id="admin-device-card" style="display:none;">
+          <div class="pref-header">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18"/></svg>
+            <div style="font-size:12px;font-weight:600;color:white;">Device Approval</div>
+          </div>
+          <button class="card-btn primary" style="width:100%;padding:10px;" onclick="openCcDeviceApprovalPanel()">
+            📱 Open Device Approval
+          </button>
+        </div>
+
         <button class="card-btn" style="width:100%;padding:12px;background:rgba(239,68,68,0.15);border-color:rgba(239,68,68,0.3);color:#ef4444;" onclick="doLogout()">
           Sign Out
         </button>
@@ -1255,7 +1264,7 @@
       <div class="modal-header">
         <div>
           <div style="font-size:14px;font-weight:600;color:white;">Manage Users</div>
-          <div style="font-size:10px;color:rgba(255,255,255,0.5);">Manage Defect Command Center access</div>
+          <div style="font-size:10px;color:rgba(255,255,255,0.5);">Kelola PIN & akses — Command Center maupun tiap unit</div>
         </div>
         <button class="modal-close" onclick="closeManageUser()" aria-label="Tutup">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -1266,26 +1275,34 @@
         <!-- Form Add/Edit -->
         <div id="user-form" style="display:none;">
           <div style="font-size:12px;font-weight:600;color:#60a5fa;margin-bottom:10px;" id="user-form-title">Add New User</div>
-          <input type="hidden" id="user-form-id" />
+          <input type="hidden" id="user-form-original-email" />
           <input type="email" id="user-form-email" class="user-form-input" placeholder="Email" autocomplete="off" />
+          <input type="text" id="user-form-name" class="user-form-input" placeholder="Nama lengkap" autocomplete="off" />
           <div style="position:relative;margin-bottom:10px;">
-            <input type="password" id="user-form-password" class="user-form-input" placeholder="Password (min 6 characters)" autocomplete="new-password" style="padding-right:44px;margin-bottom:0;" />
-            <button type="button" onclick="togglePasswordVisibility()" aria-label="Show/hide password" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;color:rgba(255,255,255,0.5);cursor:pointer;padding:8px;display:flex;">
-              <svg id="pw-eye-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-            </button>
+            <input type="tel" id="user-form-pin" class="user-form-input" placeholder="PIN 6 digit (kosongkan = generate otomatis)" autocomplete="off" maxlength="6" inputmode="numeric" style="margin-bottom:0;" />
           </div>
-          <input type="text" id="user-form-name" class="user-form-input" placeholder="Full name" autocomplete="off" />
+          <div style="font-size:11px;color:rgba(255,255,255,0.5);margin:8px 0 4px;">Akses ke Property (Defect Unit):</div>
+          <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px;">
+            <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:white;cursor:pointer;"><input type="checkbox" class="user-form-hotel" value="Verse Luxe Wahid Hasyim" /> Verse Luxe Wahid Hasyim</label>
+            <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:white;cursor:pointer;"><input type="checkbox" class="user-form-hotel" value="Verse Lite Gajah Mada" /> Verse Lite Gajah Mada</label>
+            <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:white;cursor:pointer;"><input type="checkbox" class="user-form-hotel" value="Verse Hotel Cirebon" /> Verse Hotel Cirebon</label>
+            <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:white;cursor:pointer;"><input type="checkbox" class="user-form-hotel" value="Oak Tree Mahakam Blok M" /> Oak Tree Mahakam Blok M</label>
+          </div>
           <select id="user-form-role" class="user-form-input" style="background-color:#16243a;color:white;">
-            <option value="Corporate" style="background:#16243a;color:white;">Corporate (view only everywhere)</option>
-            <option value="Corporate-Editor" style="background:#16243a;color:white;">Corporate - Editor (can edit in units, view only in Command Center)</option>
-            <option value="CEO" style="background:#16243a;color:white;">CEO (can edit in units, view only in Command Center)</option>
+            <option value="viewer" style="background:#16243a;color:white;">Viewer (lihat saja, di property)</option>
+            <option value="editor" style="background:#16243a;color:white;">Editor (bisa edit defect, di property)</option>
+            <option value="admin" style="background:#16243a;color:white;">Admin (akses penuh, di property)</option>
+          </select>
+          <div style="display:flex;align-items:center;gap:8px;margin:4px 0 8px;">
+            <input type="checkbox" id="user-form-cc-access" style="cursor:pointer;" onchange="toggleCcRoleVisibility()" />
+            <label for="user-form-cc-access" style="font-size:12px;color:white;cursor:pointer;">Punya akses Defect Command Center juga</label>
+          </div>
+          <select id="user-form-cc-role" class="user-form-input" style="background-color:#16243a;color:white;display:none;">
+            <option value="Corporate" style="background:#16243a;color:white;">Corporate (view only di Command Center)</option>
+            <option value="CEO" style="background:#16243a;color:white;">CEO (view only di Command Center)</option>
             <option value="Admin" style="background:#16243a;color:white;">Admin (full access + Manage Users)</option>
           </select>
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
-            <input type="checkbox" id="user-form-active" checked style="cursor:pointer;" />
-            <label for="user-form-active" style="font-size:12px;color:white;cursor:pointer;">Active (can login)</label>
-          </div>
-          <div style="display:flex;gap:6px;">
+          <div style="display:flex;gap:6px;margin-top:8px;">
             <button class="card-btn" onclick="cancelUserForm()" style="flex:1;padding:10px;background:rgba(255,255,255,0.05);">Cancel</button>
             <button class="card-btn primary" id="user-form-save-btn" onclick="saveUser()" style="flex:1;padding:10px;">Save</button>
           </div>
@@ -1299,6 +1316,25 @@
           </button>
           <div id="user-list"></div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="cc-device-approval-modal" class="modal" style="display:none;">
+    <div class="modal-backdrop" onclick="closeCcDeviceApprovalPanel()"></div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <div>
+          <div style="font-size:14px;font-weight:600;color:white;">📱 Device Approval</div>
+          <div style="font-size:10px;color:rgba(255,255,255,0.5);">Perangkat yang minta akses ke Defect Command Center</div>
+        </div>
+        <button class="modal-close" onclick="closeCcDeviceApprovalPanel()" aria-label="Tutup">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div style="font-size:11px;color:rgba(255,255,255,0.5);margin-bottom:12px;">Perangkat yang belum disetujui tidak bisa buka Command Center sama sekali.</div>
+        <div id="cc-device-list"></div>
       </div>
     </div>
   </div>
@@ -1395,14 +1431,154 @@
   }
 
   // ============================================================
+  // DEVICE APPROVAL — perangkat baru harus disetujui COO dulu (via defect unit mana pun
+  // yang punya menu 📱 Device Approval, karena datanya di 1 tabel bersama) sebelum bisa
+  // buka Command Center sama sekali.
+  // ============================================================
+  const CC_DEVICE_ID_KEY = 'defect_device_id';
+  const CC_APP_NAME = 'command_center';
+
+  function getOrCreateCcDeviceId() {
+    let id = localStorage.getItem(CC_DEVICE_ID_KEY);
+    if (!id) {
+      id = (crypto.randomUUID ? crypto.randomUUID() : 'dev-' + Date.now() + '-' + Math.random().toString(36).slice(2));
+      localStorage.setItem(CC_DEVICE_ID_KEY, id);
+    }
+    return id;
+  }
+
+  function showCcDeviceGateScreen(status, deviceId) {
+    const old = document.getElementById('cc-device-gate-overlay');
+    if (old) old.remove();
+    const overlay = document.createElement('div');
+    overlay.id = 'cc-device-gate-overlay';
+    overlay.style.cssText = 'position:fixed;inset:0;background:#0f2540;z-index:9999999;display:flex;align-items:center;justify-content:center;padding:24px;font-family:system-ui,sans-serif;';
+
+    let icon = '⏳', title = 'Menunggu Persetujuan Admin', desc = 'HP/browser ini belum terdaftar. Minta COO untuk menyetujui akses lewat menu Device Approval di salah satu unit.';
+    if (status === 'revoked') {
+      icon = '🚫'; title = 'Akses Dicabut'; desc = 'Akses untuk HP/browser ini sudah dicabut oleh Admin. Hubungi COO kalau ini keliru.';
+    }
+
+    overlay.innerHTML = `
+      <div style="background:white;border-radius:18px;padding:28px 22px;max-width:360px;width:100%;text-align:center;">
+        <div style="font-size:44px;margin-bottom:10px;">${icon}</div>
+        <div style="font-weight:800;font-size:17px;color:#1a3a5c;margin-bottom:8px;">${title}</div>
+        <div style="font-size:13px;color:#64748b;line-height:1.5;margin-bottom:16px;">${desc}</div>
+        <div style="font-size:10px;color:#94a3b8;background:#f8fafc;border-radius:8px;padding:8px;margin-bottom:16px;word-break:break-all;">Device ID: ${deviceId}</div>
+        <button id="cc-device-gate-recheck" style="width:100%;padding:12px;background:#1a3a5c;color:white;border:none;border-radius:10px;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;">🔄 Cek Status Lagi</button>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    document.getElementById('cc-device-gate-recheck').onclick = () => checkCcDeviceApproval();
+  }
+
+  function hideCcDeviceGateScreen() {
+    const old = document.getElementById('cc-device-gate-overlay');
+    if (old) old.remove();
+  }
+
+  async function checkCcDeviceApproval() {
+    const deviceId = getOrCreateCcDeviceId();
+    try {
+      const resp = await fetch(SUPABASE_URL + '/rest/v1/defect_device_approvals?device_id=eq.' + encodeURIComponent(deviceId) + '&app_name=eq.' + CC_APP_NAME + '&select=status', {
+        headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY }
+      });
+      const rows = await resp.json();
+
+      if (!rows || rows.length === 0) {
+        await fetch(SUPABASE_URL + '/rest/v1/defect_device_approvals', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': SUPABASE_KEY,
+            'Authorization': 'Bearer ' + SUPABASE_KEY,
+            'Prefer': 'return=minimal'
+          },
+          body: JSON.stringify({ device_id: deviceId, app_name: CC_APP_NAME, status: 'pending', user_agent: navigator.userAgent })
+        });
+        showCcDeviceGateScreen('pending', deviceId);
+        return;
+      }
+
+      const status = rows[0].status;
+      if (status === 'approved') {
+        hideCcDeviceGateScreen();
+        fetch(SUPABASE_URL + '/rest/v1/defect_device_approvals?device_id=eq.' + encodeURIComponent(deviceId) + '&app_name=eq.' + CC_APP_NAME, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': SUPABASE_KEY,
+            'Authorization': 'Bearer ' + SUPABASE_KEY,
+            'Prefer': 'return=minimal'
+          },
+          body: JSON.stringify({ last_seen_at: new Date().toISOString() })
+        }).catch(()=>{});
+      } else {
+        showCcDeviceGateScreen(status, deviceId);
+      }
+    } catch (e) {
+      console.error('Command Center device approval check error:', e);
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', checkCcDeviceApproval);
+
+  async function openCcDeviceApprovalPanel() {
+    if (currentUser?.role !== 'Admin') { alert('Hanya Admin yang dapat mengelola device'); return; }
+    document.getElementById('cc-device-approval-modal').style.display = 'flex';
+    await loadCcDeviceApprovals();
+  }
+  function closeCcDeviceApprovalPanel() {
+    document.getElementById('cc-device-approval-modal').style.display = 'none';
+  }
+
+  async function loadCcDeviceApprovals() {
+    const listEl = document.getElementById('cc-device-list');
+    listEl.innerHTML = '<div class="loading">Loading...</div>';
+    try {
+      const { data, error } = await sbClient.from('defect_device_approvals').select('*').eq('app_name', CC_APP_NAME).order('first_seen_at', { ascending: false });
+      if (error) throw error;
+      if (!data || data.length === 0) { listEl.innerHTML = '<div class="empty">Belum ada perangkat terdaftar</div>'; return; }
+      listEl.innerHTML = data.map(d => {
+        const statusLabel = d.status === 'approved' ? '✅ Disetujui' : d.status === 'revoked' ? '🚫 Dicabut' : '⏳ Menunggu';
+        const statusColor = d.status === 'approved' ? '#22c55e' : d.status === 'revoked' ? '#ef4444' : '#fbbf24';
+        return `
+          <div class="user-item">
+            <div class="user-info">
+              <div class="user-name" style="color:${statusColor};font-weight:700;">${statusLabel}</div>
+              <div class="user-email" style="font-size:10px;">${escapeHtml((d.user_agent||'').slice(0,60))}</div>
+              <div class="user-email" style="font-size:9px;word-break:break-all;">ID: ${escapeHtml(d.device_id)}</div>
+            </div>
+            <div class="user-actions">
+              ${d.status !== 'approved' ? `<button class="user-btn" onclick="setCcDeviceStatus('${escapeHtml(d.id)}','approved')" aria-label="Setujui">✅</button>` : ''}
+              ${d.status !== 'revoked' ? `<button class="user-btn danger" onclick="setCcDeviceStatus('${escapeHtml(d.id)}','revoked')" aria-label="Cabut">🚫</button>` : ''}
+            </div>
+          </div>
+        `;
+      }).join('');
+    } catch(e) {
+      listEl.innerHTML = '<div class="empty" style="color:#ef4444;">Error: ' + escapeHtml(e.message) + '</div>';
+    }
+  }
+
+  async function setCcDeviceStatus(id, status) {
+    try {
+      const { error } = await sbClient.from('defect_device_approvals').update({
+        status, approved_at: new Date().toISOString(), approved_by: currentUser.email
+      }).eq('id', id);
+      if (error) throw error;
+      await loadCcDeviceApprovals();
+    } catch(e) {
+      alert('Gagal: ' + e.message);
+    }
+  }
+
+  // ============================================================
   // WHITELIST — TEMPORARY, replace with Supabase users table later
   // ============================================================
-  const WHITELIST_USERS = [
-    { email: 'coo.versehotels@gmail.com', password: 'coo2026', name: 'Ian', role: 'Admin' },
-    { email: 'ceo.versehotels@gmail.com', password: 'ceo2026', name: 'CEO', role: 'CEO' },
-    { email: 'hrmanager.versehotels@gmail.com', password: 'hr2026', name: 'HR Manager', role: 'Corporate' },
-    { email: 'engineer.versehotels@gmail.com', password: 'eng2026', name: 'CE Corporate', role: 'Corporate' },
-  ];
+  // Akses Command Center sekarang diatur lewat kolom cc_access/cc_role di tabel
+  // defect_users (via Manage User) — bukan hardcode di sini lagi.
+  // ============================================================
 
   // ============================================================
   // MOCK DATA — replace with real Supabase queries later
@@ -1466,11 +1642,10 @@
 
   async function doLogin() {
     console.log('[Login] doLogin() triggered');
-    let email = '', password = '', errorEl = null, loginBtn = null;
+    let pin = '', errorEl = null, loginBtn = null;
 
     try {
-      email = (document.getElementById('login-email').value || '').trim().toLowerCase();
-      password = (document.getElementById('login-password').value || '').trim();
+      pin = (document.getElementById('login-pin').value || '').trim();
       errorEl = document.getElementById('login-error');
       loginBtn = document.getElementById('login-btn');
     } catch (eInit) {
@@ -1479,8 +1654,8 @@
       return;
     }
 
-    if (!email || !password) {
-      if (errorEl) errorEl.textContent = 'Email and password required';
+    if (!pin || pin.length !== 6) {
+      if (errorEl) errorEl.textContent = 'PIN harus 6 digit';
       return;
     }
 
@@ -1490,43 +1665,35 @@
     let user = null;
 
     try {
-      // PRIMARY: hardcoded whitelist — instant, no network dependency
-      const wUser = WHITELIST_USERS.find(u => u.email.toLowerCase() === email && u.password === password);
-      if (wUser) {
-        user = { email: wUser.email, name: wUser.name, role: wUser.role };
-        console.log('[Login] Success via WHITELIST for:', email);
+      if (!sbClient) {
+        if (errorEl) errorEl.textContent = 'Tidak bisa terhubung ke server. Coba lagi.';
+        if (loginBtn) { loginBtn.disabled = false; loginBtn.textContent = 'Sign In'; }
+        return;
       }
 
-      // SECONDARY: Supabase dashboard_users — optional, only if whitelist missed
-      if (!user && sbClient) {
-        try {
-          const queryPromise = sbClient
-            .from('dashboard_users')
-            .select('id, email, password, name, role, active')
-            .eq('email', email)
-            .maybeSingle();
-          const timeoutPromise = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Supabase timeout')), 5000)
-          );
-          const { data, error } = await Promise.race([queryPromise, timeoutPromise]);
+      const queryPromise = sbClient
+        .from('defect_users')
+        .select('email,name,cc_access,cc_role')
+        .eq('pin', pin)
+        .maybeSingle();
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Supabase timeout')), 8000)
+      );
+      const { data, error } = await Promise.race([queryPromise, timeoutPromise]);
 
-          if (error) {
-            console.warn('[Login] Supabase error (ignored, whitelist is primary):', error.message);
-          } else if (data && data.active !== false && data.password === password) {
-            user = { email: data.email, name: data.name, role: data.role };
-            console.log('[Login] Success via Supabase for:', email);
-            try {
-              sbClient.from('dashboard_users').update({ last_login_at: new Date().toISOString() }).eq('id', data.id).then();
-            } catch(_){}
-          } else {
-            console.log('[Login] Not found in Supabase either');
-          }
-        } catch(e) {
-          console.warn('[Login] Supabase query error/timeout (ignored, whitelist is primary):', e.message);
+      if (error) {
+        console.warn('[Login] Supabase error:', error.message);
+      } else if (data) {
+        // PIN valid — tapi Command Center cuma untuk user dengan cc_access=true
+        // (diatur lewat Manage User di Command Center, bukan hardcode di kode lagi).
+        if (data.cc_access) {
+          user = { email: data.email, name: data.name, role: data.cc_role || 'Corporate' };
+          console.log('[Login] Success via PIN for:', data.email);
+        } else {
+          console.log('[Login] PIN valid tapi bukan akses Command Center:', data.email);
         }
       }
     } catch (eOuter) {
-      // Guaranteed catch-all so the button ALWAYS resets, no matter what breaks
       console.error('[Login] UNEXPECTED ERROR during login:', eOuter);
       if (errorEl) errorEl.innerHTML = 'Unexpected error: ' + eOuter.message + '<br><span style="font-size:10px;color:rgba(255,255,255,0.5);">Check console (F12) for details.</span>';
       if (loginBtn) { loginBtn.disabled = false; loginBtn.textContent = 'Sign In'; }
@@ -1536,20 +1703,12 @@
     if (loginBtn) { loginBtn.disabled = false; loginBtn.textContent = 'Sign In'; }
 
     if (!user) {
-      const attemptedSupabase = sbClient !== null;
-      if (errorEl) errorEl.innerHTML = attemptedSupabase
-        ? 'Invalid email or password.<br><span style="font-size:10px;color:rgba(255,255,255,0.5);">Checked whitelist + Supabase.</span>'
-        : 'Invalid email or password.<br><span style="font-size:10px;color:rgba(255,255,255,0.5);">Checked whitelist (Supabase offline).</span>';
-      console.log('[Login] Failed for email:', email, '| Supabase attempted:', attemptedSupabase);
+      if (errorEl) errorEl.innerHTML = 'PIN salah atau tidak punya akses Command Center.';
+      console.log('[Login] Failed for PIN entered');
       return;
     }
 
     saveSession(user);
-    if (sbClient) {
-      try {
-        sbClient.from('dashboard_users').update({ last_login_at: new Date().toISOString() }).eq('email', user.email).then();
-      } catch(_){}
-    }
     enterApp();
   }
 
@@ -1559,8 +1718,7 @@
     stopAutoRefresh();
     showScreen('login');
     document.getElementById('bottom-nav').style.display = 'none';
-    document.getElementById('login-email').value = '';
-    document.getElementById('login-password').value = '';
+    document.getElementById('login-pin').value = '';
   }
 
   function enterApp() {
@@ -1582,6 +1740,7 @@
     document.getElementById('profile-user-info').textContent = `${currentUser.name} · ${currentUser.email}`;
     if (currentUser.role === 'Admin') {
       document.getElementById('admin-user-card').style.display = 'block';
+      document.getElementById('admin-device-card').style.display = 'block';
     }
   }
 
@@ -1830,7 +1989,7 @@
       const pctDone = total > 0 ? (done / total * 100).toFixed(0) : 0;
 
       cardsHTML += `
-        <a href="${h.url}?sso_email=${encodeURIComponent(currentUser.email)}&sso_role=${encodeURIComponent(currentUser.role)}&sso_name=${encodeURIComponent(currentUser.name)}" class="hotel-card">
+        <a href="${h.url}?sso_email=${encodeURIComponent(currentUser.email)}&sso_role=${encodeURIComponent(currentUser.role)}&sso_name=${encodeURIComponent(currentUser.name)}&sso_trusted=1" class="hotel-card">
           <div class="hotel-accent" style="background:${h.accent};"></div>
           <div class="hotel-head">
             <div class="hotel-info">
@@ -1904,7 +2063,7 @@
       const pctDone = (h.done / h.total * 100).toFixed(0);
       const dangerClass = active > 30 ? ' danger' : '';
       return `
-        <a href="${h.url}?sso_email=${encodeURIComponent(currentUser.email)}&sso_role=${encodeURIComponent(currentUser.role)}&sso_name=${encodeURIComponent(currentUser.name)}" class="hotel-card">
+        <a href="${h.url}?sso_email=${encodeURIComponent(currentUser.email)}&sso_role=${encodeURIComponent(currentUser.role)}&sso_name=${encodeURIComponent(currentUser.name)}&sso_trusted=1" class="hotel-card">
           <div class="hotel-accent" style="background:${h.accent};"></div>
           <div class="hotel-head">
             <div class="hotel-info">
@@ -2427,7 +2586,7 @@
         data.map(d => {
           const hotelDef = HOTEL_DEFS.find(h => h.dbName === d.hotel) || {};
           const sc = statusColorMap[statusOf(d)] || '#f59e0b';
-          const ssoUrl = hotelDef.url ? (hotelDef.url + '?sso_email=' + encodeURIComponent(currentUser.email) + '&sso_role=' + encodeURIComponent(currentUser.role) + '&sso_name=' + encodeURIComponent(currentUser.name)) : '#';
+          const ssoUrl = hotelDef.url ? (hotelDef.url + '?sso_email=' + encodeURIComponent(currentUser.email) + '&sso_role=' + encodeURIComponent(currentUser.role) + '&sso_name=' + encodeURIComponent(currentUser.name) + '&sso_trusted=1') : '#';
           return `
             <a href="${ssoUrl}" style="display:block;text-decoration:none;color:inherit;background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.1);border-radius:10px;padding:12px;margin-bottom:8px;">
               <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:5px;">
@@ -2468,36 +2627,35 @@
     listEl.innerHTML = '<div class="loading">Loading user list...</div>';
     try {
       const { data, error } = await sbClient
-        .from('dashboard_users')
-        .select('id, email, name, role, active, last_login_at, created_at')
-        .order('role', { ascending: true })
-        .order('created_at', { ascending: false });
+        .from('defect_users')
+        .select('email, name, pin, role, division, hotels, cc_access, cc_role, created_at')
+        .order('name', { ascending: true });
       if (error) throw error;
       if (!data || data.length === 0) {
         listEl.innerHTML = '<div class="empty">No users saved yet</div>';
         return;
       }
       listEl.innerHTML = data.map(u => {
-        const roleColor = u.role === 'COO' ? '#fbbf24' : u.role === 'CEO' ? '#a78bfa' : '#60a5fa';
-        const activeIcon = u.active === false ? '⏸️' : '✅';
-        const lastLoginText = u.last_login_at
-          ? 'Login: ' + new Date(u.last_login_at).toLocaleDateString('en-US', {day:'numeric', month:'short'})
-          : 'Never logged in';
+        const ccBadge = u.cc_access
+          ? `<span style="color:#fbbf24;font-weight:600;"> · CC: ${escapeHtml(u.cc_role||'Corporate')}</span>`
+          : '';
+        const hotelCount = (u.hotels||[]).length;
+        const hotelText = hotelCount === 4 ? 'Semua 4 Property' : hotelCount + ' Property';
         return `
           <div class="user-item">
             <div class="user-info">
-              <div class="user-name">${activeIcon} ${escapeHtml(u.name)}</div>
+              <div class="user-name">👤 ${escapeHtml(u.name)} <span style="font-family:monospace;color:#60a5fa;">PIN: ${escapeHtml(u.pin||'—')}</span></div>
               <div class="user-email">${escapeHtml(u.email)}</div>
               <div class="user-meta">
-                <span style="color:${roleColor};font-weight:600;">${escapeHtml(u.role)}</span>
-                <span style="color:rgba(255,255,255,0.4);"> · ${lastLoginText}</span>
+                <span style="color:#60a5fa;font-weight:600;">${escapeHtml(u.role||'viewer')}</span>
+                <span style="color:rgba(255,255,255,0.4);"> · ${hotelText}</span>${ccBadge}
               </div>
             </div>
             <div class="user-actions">
-              <button class="user-btn" onclick="editUser(${u.id})" aria-label="Edit ${escapeHtml(u.name)}">
+              <button class="user-btn" onclick="editUser('${escapeHtml(u.email)}')" aria-label="Edit ${escapeHtml(u.name)}">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
               </button>
-              <button class="user-btn danger" onclick="deleteUser(${u.id}, '${escapeHtml(u.name)}')" aria-label="Hapus ${escapeHtml(u.name)}">
+              <button class="user-btn danger" onclick="deleteUser('${escapeHtml(u.email)}', '${escapeHtml(u.name)}')" aria-label="Hapus ${escapeHtml(u.name)}">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"/></svg>
               </button>
             </div>
@@ -2509,51 +2667,44 @@
     }
   }
 
-  function togglePasswordVisibility() {
-    const input = document.getElementById('user-form-password');
-    const icon = document.getElementById('pw-eye-icon');
-    if (input.type === 'password') {
-      input.type = 'text';
-      icon.innerHTML = '<path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a18.6 18.6 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>';
-    } else {
-      input.type = 'password';
-      icon.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
-    }
+  function toggleCcRoleVisibility() {
+    const checked = document.getElementById('user-form-cc-access').checked;
+    document.getElementById('user-form-cc-role').style.display = checked ? 'block' : 'none';
   }
 
   function showAddUserForm() {
     resetUserForm();
     document.getElementById('user-form').style.display = 'block';
     document.getElementById('user-form-title').textContent = 'Add New User';
-    document.getElementById('user-form-id').value = '';
   }
 
-  async function editUser(id) {
-    const { data, error } = await sbClient.from('dashboard_users').select('*').eq('id', id).single();
+  async function editUser(email) {
+    const { data, error } = await sbClient.from('defect_users').select('*').eq('email', email).single();
     if (error || !data) { alert('Failed to fetch user data'); return; }
     document.getElementById('user-form').style.display = 'block';
     document.getElementById('user-form-title').textContent = 'Edit User';
-    document.getElementById('user-form-id').value = data.id;
+    document.getElementById('user-form-original-email').value = data.email;
     document.getElementById('user-form-email').value = data.email;
-    document.getElementById('user-form-password').value = data.password || '';
-    document.getElementById('user-form-password').type = 'password';
-    document.getElementById('pw-eye-icon').innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
-    document.getElementById('user-form-password').placeholder = 'Password';
-    document.getElementById('user-form-name').value = data.name;
-    document.getElementById('user-form-role').value = data.role;
-    document.getElementById('user-form-active').checked = data.active !== false;
+    document.getElementById('user-form-name').value = data.name || '';
+    document.getElementById('user-form-pin').value = data.pin || '';
+    document.getElementById('user-form-role').value = data.role || 'viewer';
+    const hotels = data.hotels || [];
+    document.querySelectorAll('.user-form-hotel').forEach(cb => { cb.checked = hotels.includes(cb.value); });
+    document.getElementById('user-form-cc-access').checked = !!data.cc_access;
+    document.getElementById('user-form-cc-role').value = data.cc_role || 'Corporate';
+    toggleCcRoleVisibility();
   }
 
   function resetUserForm() {
-    document.getElementById('user-form-id').value = '';
+    document.getElementById('user-form-original-email').value = '';
     document.getElementById('user-form-email').value = '';
-    document.getElementById('user-form-password').value = '';
-    document.getElementById('user-form-password').type = 'password';
-    document.getElementById('pw-eye-icon').innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
-    document.getElementById('user-form-password').placeholder = 'Password (min 6 characters)';
     document.getElementById('user-form-name').value = '';
-    document.getElementById('user-form-role').value = 'Corporate';
-    document.getElementById('user-form-active').checked = true;
+    document.getElementById('user-form-pin').value = '';
+    document.getElementById('user-form-role').value = 'viewer';
+    document.querySelectorAll('.user-form-hotel').forEach(cb => { cb.checked = false; });
+    document.getElementById('user-form-cc-access').checked = false;
+    document.getElementById('user-form-cc-role').value = 'Corporate';
+    toggleCcRoleVisibility();
   }
 
   function cancelUserForm() {
@@ -2562,23 +2713,25 @@
   }
 
   async function saveUser() {
-    const id = document.getElementById('user-form-id').value;
+    const originalEmail = document.getElementById('user-form-original-email').value;
     const email = document.getElementById('user-form-email').value.trim().toLowerCase();
-    const password = document.getElementById('user-form-password').value.trim();
     const name = document.getElementById('user-form-name').value.trim();
+    let pin = document.getElementById('user-form-pin').value.trim();
     const role = document.getElementById('user-form-role').value;
-    const active = document.getElementById('user-form-active').checked;
+    const hotels = Array.from(document.querySelectorAll('.user-form-hotel:checked')).map(cb => cb.value);
+    const cc_access = document.getElementById('user-form-cc-access').checked;
+    const cc_role = cc_access ? document.getElementById('user-form-cc-role').value : null;
 
     if (!email || !name) {
-      alert('Email and name are required');
+      alert('Email dan nama wajib diisi');
       return;
     }
-    if (!id && !password) {
-      alert('Password is required for new users');
+    if (pin && !/^[0-9]{6}$/.test(pin)) {
+      alert('PIN harus 6 digit angka');
       return;
     }
-    if (password && password.length < 6) {
-      alert('Password must be at least 6 characters');
+    if (hotels.length === 0) {
+      alert('Pilih minimal 1 property');
       return;
     }
 
@@ -2587,15 +2740,19 @@
     btn.textContent = 'Saving...';
 
     try {
-      if (id) {
-        // Update existing
-        const update = { email, name, role, active, updated_at: new Date().toISOString() };
-        if (password) update.password = password;
-        const { error } = await sbClient.from('dashboard_users').update(update).eq('id', parseInt(id));
+      // PIN kosong = generate otomatis (6 digit acak) — cuma untuk user baru atau kalau memang diminta reset
+      if (!pin) {
+        pin = String(Math.floor(100000 + Math.random() * 900000));
+      }
+
+      if (originalEmail) {
+        // Update existing (pakai email asli sebagai kunci, jaga-jaga kalau email diubah)
+        const update = { email, name, pin, role, hotels, cc_access, cc_role };
+        const { error } = await sbClient.from('defect_users').update(update).eq('email', originalEmail);
         if (error) throw error;
       } else {
         // Insert new
-        const { error } = await sbClient.from('dashboard_users').insert({ email, password, name, role, active });
+        const { error } = await sbClient.from('defect_users').insert({ email, name, pin, role, division: 'ALL', hotels, cc_access, cc_role });
         if (error) throw error;
       }
       document.getElementById('user-form').style.display = 'none';
@@ -2609,10 +2766,10 @@
     }
   }
 
-  async function deleteUser(id, name) {
+  async function deleteUser(email, name) {
     if (!confirm(`Are you sure to delete user "${name}"? This action cannot be undone.`)) return;
     try {
-      const { error } = await sbClient.from('dashboard_users').delete().eq('id', parseInt(id));
+      const { error } = await sbClient.from('defect_users').delete().eq('email', email);
       if (error) throw error;
       await loadUserList();
     } catch(e) {
@@ -2680,8 +2837,11 @@
       enterApp();
     }
     // Enter key on login
-    document.getElementById('login-password').addEventListener('keydown', (e) => {
+    document.getElementById('login-pin').addEventListener('keydown', (e) => {
       if (e.key === 'Enter') doLogin();
+    });
+    document.getElementById('login-pin').addEventListener('input', (e) => {
+      e.target.value = e.target.value.replace(/[^0-9]/g,'').slice(0,6);
     });
   });
 </script>
