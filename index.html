@@ -1264,7 +1264,7 @@
       <div class="modal-header">
         <div>
           <div style="font-size:14px;font-weight:600;color:white;">Manage Users</div>
-          <div style="font-size:10px;color:rgba(255,255,255,0.5);">Kelola PIN & akses — Command Center maupun tiap unit</div>
+          <div style="font-size:10px;color:rgba(255,255,255,0.5);">Kelola siapa yang punya akses Defect Command Center (Corporate/CEO/Admin). Staff per-property dikelola dari masing-masing unit.</div>
         </div>
         <button class="modal-close" onclick="closeManageUser()" aria-label="Tutup">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -2629,6 +2629,7 @@
       const { data, error } = await sbClient
         .from('defect_users')
         .select('email, name, pin, role, division, hotels, cc_access, cc_role, created_at')
+        .eq('cc_access', true)
         .order('name', { ascending: true });
       if (error) throw error;
       if (!data || data.length === 0) {
@@ -2701,8 +2702,10 @@
     document.getElementById('user-form-name').value = '';
     document.getElementById('user-form-pin').value = '';
     document.getElementById('user-form-role').value = 'viewer';
-    document.querySelectorAll('.user-form-hotel').forEach(cb => { cb.checked = false; });
-    document.getElementById('user-form-cc-access').checked = false;
+    // Default: semua 4 hotel dicentang — orang yang ditambah lewat Command Center
+    // biasanya Corporate/CEO yang butuh akses ke semua property.
+    document.querySelectorAll('.user-form-hotel').forEach(cb => { cb.checked = true; });
+    document.getElementById('user-form-cc-access').checked = true;
     document.getElementById('user-form-cc-role').value = 'Corporate';
     toggleCcRoleVisibility();
   }
